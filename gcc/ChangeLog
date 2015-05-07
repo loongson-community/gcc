@@ -1,5 +1,11 @@
 2018-01-30  Leslie Zhai  <lesliezhai@llvm.org.cn>
 
+	Backported PR tree-optimization/66002 to GCC 5.5
+	* passes.def: Schedule another pass_merge_phi after ifcombine, right
+	before phiopt.
+
+2018-01-30  Leslie Zhai  <lesliezhai@llvm.org.cn>
+
 	Backported PR rtl-optimization/65980 to GCC 5.5
 	* jump.c (rtx_renumbered_equal_p) <case LABEL_REF>: Use
 	next_nonnote_nondebug_insn instead of next_real_insn and

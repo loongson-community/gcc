@@ -1,5 +1,10 @@
 2018-01-30  Leslie Zhai  <lesliezhai@llvm.org.cn>
 
+	Backported PR tree-optimization/66002 to GCC 5.5
+	* gcc.dg/vect/vect-125.c: New testcase.
+
+2018-01-30  Leslie Zhai  <lesliezhai@llvm.org.cn>
+
 	Backported PR rtl-optimization/65980 to GCC 5.5
 	* gcc.dg/pr65980.c: New test.
 

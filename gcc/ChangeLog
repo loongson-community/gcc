@@ -1,3 +1,10 @@
+2018-01-30  Leslie Zhai <lesliezhai@llvm.org.cn>
+
+	Backported PR tree-optimization/66299 to GCC 5.5
+	* match.pd ((CST1 << A) == CST2 -> A == ctz (CST2) - ctz (CST1)
+	((CST1 << A) != CST2 -> A != ctz (CST2) - ctz (CST1)): New
+	patterns.
+
 2018-01-29  Leslie Zhai  <lesliezhai@llvm.org.cn>
 
 	Backported PR middle-end/66353 to GCC 5.5

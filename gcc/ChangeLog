@@ -1,3 +1,14 @@
+2018-01-29  Leslie Zhai  <lesliezhai@llvm.org.cn>
+
+	Backported PR middle-end/66353 to GCC 5.5
+	* basic-block.h	(has_abnormal_call_or_eh_pred_edge_p): New function.
+	* ira-lives.c (bb_has_abnormal_call_pred): Remove function.
+	(process_bb_node_lives): Call has_abnormal_call_or_eh_pred_edge_p
+	rather than bb_has_abnormal_call_pred.
+	* lra-lives.c (bb_has_abnormal_call_pred): Remove function.
+	(process_bb_lives): Call has_abnormal_call_or_eh_pred_edge_p
+	rather than bb_has_abnormal_call_pred.
+
 2018-01-22  Leslie Zhai <lesliezhai@llvm.org.cn>
 
 	Backported PR c/65345 to GCC 5.5

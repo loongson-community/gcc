@@ -13242,7 +13242,10 @@ mips_process_sync_loop (rtx_insn *insn, rtx *operands)
 
   /* Output the exit label, if needed.  */
   if (required_oldval)
-    mips_multi_add_label ("2:");
+    {
+      mips_multi_add_label ("2:");
+      mips_multi_add_insn ("sync", NULL);
+    }
 
 #undef READ_OPERAND
 }

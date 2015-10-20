@@ -16,8 +16,8 @@
 # along with GCC; see the file COPYING3.  If not see
 # <http://www.gnu.org/licenses/>.
 
-MULTILIB_OPTIONS = march=loongson2e/march=loongson2f mabi=n32/mabi=32/mabi=64 
-MULTILIB_DIRNAMES = 2e 2f lib32 lib lib64
+MULTILIB_OPTIONS = march=loongson3a/march=loongson2e/march=loongson2f mabi=n32/mabi=32/mabi=64
+MULTILIB_DIRNAMES = 3a 2e 2f lib32 lib lib64
 
 MULTILIB_OSDIRNAMES  = march.loongson2e/mabi.n32=../lib32/2e
 MULTILIB_OSDIRNAMES += march.loongson2e/mabi.32=../lib/2e
@@ -25,6 +25,9 @@ MULTILIB_OSDIRNAMES += march.loongson2e/mabi.64=../lib64/2e
 MULTILIB_OSDIRNAMES += march.loongson2f/mabi.n32=../lib32/2f
 MULTILIB_OSDIRNAMES += march.loongson2f/mabi.32=../lib/2f
 MULTILIB_OSDIRNAMES += march.loongson2f/mabi.64=../lib64/2f
+MULTILIB_OSDIRNAMES += march.loongson3a/mabi.n32=../lib32/3a
+MULTILIB_OSDIRNAMES += march.loongson3a/mabi.32=../lib/3a
+MULTILIB_OSDIRNAMES += march.loongson3a/mabi.64=../lib64/3a
 MULTILIB_OSDIRNAMES += mabi.n32=../lib32
 MULTILIB_OSDIRNAMES += mabi.32=../lib
 MULTILIB_OSDIRNAMES += mabi.64=../lib64

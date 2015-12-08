@@ -13138,6 +13138,9 @@ mips_process_sync_loop (rtx_insn *insn, rtx *operands)
   /* Output the branch-back label.  */
   mips_multi_add_label ("1:");
 
+  /* loongson needed */
+  mips_multi_add_insn ("sync", NULL);
+
   /* OLDVAL = *MEM.  */
   mips_multi_add_insn (is_64bit_p ? "lld\t%0,%1" : "ll\t%0,%1",
 		       oldval, mem, NULL);
@@ -13244,6 +13247,7 @@ mips_process_sync_loop (rtx_insn *insn, rtx *operands)
   if (required_oldval)
     {
       mips_multi_add_label ("2:");
+      /* loongson needed. */
       mips_multi_add_insn ("sync", NULL);
     }
 

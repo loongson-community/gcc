@@ -902,6 +902,26 @@
   [(set_attr "length" "8")
    (set_attr "can_delay" "no")])
 
+;;for insn_and_split template sign extend
+(define_insn "gsdmul3di"
+  [(set (match_operand:DI 0 "register_operand" "=d")
+        (mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand" "d"))
+                  (sign_extend: DI (match_operand:SI 2 "register_operand" "d"))))]
+  "TARGET_LOONGSON_3A && TARGET_64BIT"
+  "gsdmult\t%0,%1,%2"
+  [(set_attr "type" "imul3nc")
+   (set_attr "mode" "SI")])
+
+;;for insn_and_split template zero extend
+(define_insn "ugsdmul3di"
+  [(set (match_operand:DI 0 "register_operand" "=d")
+        (mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand" "d"))
+                  (zero_extend: DI (match_operand:SI 2 "register_operand" "d"))))]
+  "TARGET_LOONGSON_3A && TARGET_64BIT"
+  "gsdmultu\t%0,%1,%2"
+  [(set_attr "type" "imul3nc")
+   (set_attr "mode" "SI")])
+
 (define_expand "reduc_uplus_<mode>"
   [(match_operand:VWH 0 "register_operand" "")
    (match_operand:VWH 1 "register_operand" "")]

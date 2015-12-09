@@ -4940,6 +4940,18 @@
     }
 })
 
+;; 32-bit floating point moves zero
+;; In loongson3a we use xor "$f0,$f0,$f0" to substitute "mtc1 $0,$f0".
+
+(define_insn "movsf_zero"
+  [(set (match_operand:SF 0 "register_operand" "=f")
+        (match_operand:SF 1 "const_0_operand" ""))]
+  "TARGET_LOONGSON_3A"
+  "xor %0,%0,%0"
+  [(set_attr "type" "logical")
+   (set_attr "mode" "SF")])
+
+
 ;; 32-bit floating point moves
 
 (define_expand "movsf"
@@ -4987,6 +4999,18 @@
   { return mips_output_move (operands[0], operands[1]); }
   [(set_attr "move_type" "move,move,move,load,store")
    (set_attr "mode" "SF")])
+
+
+;; 64-bit floating point moves zero
+;; In loongson3a we use "xor $f0,$f0,$f0" to substitute "dmtc1 $0,$f0".
+
+(define_insn "movdf_zero"
+  [(set (match_operand:DF 0 "register_operand" "=f")
+        (match_operand:DF 1 "const_0_operand" ""))]
+  "TARGET_LOONGSON_3A"
+  "xor %0,%0,%0"
+  [(set_attr "type" "logical")
+   (set_attr "mode" "DF")])
 
 ;; 64-bit floating point moves
 

@@ -10248,6 +10248,53 @@ mips_save_reg_p (unsigned int regno)
   return false;
 }
 
+static void
+mips_gs464_save_restore_reg (enum machine_mode mode, int regno1, int regno2,
+                       HOST_WIDE_INT offset_high, int save_restore_flag)
+{
+  rtx mem0, mem1;
+  rtx op0, op1;
+  rtx high_offset_addr, low_offset_addr;
+
+  /* gssq reg1, reg2, offset(base_reg) means:
+   * mem0: (offset + 8)(base_reg) = reg1
+   * mem1: offset(base_reg) = reg2
+   * the offset appeared in offset(base_reg) is low mem */
+
+  high_offset_addr = plus_constant (Pmode,stack_pointer_rtx, offset_high);
+  low_offset_addr = plus_constant (Pmode,stack_pointer_rtx, offset_high - 8);
+
+  mem0 = gen_frame_mem (mode, high_offset_addr);
+  mem1 = gen_frame_mem (mode, low_offset_addr);
+  op0 = gen_rtx_REG (mode, regno1);
+  op1 = gen_rtx_REG (mode, regno2);
+
+  /* save register */
+  if(save_restore_flag == 0)
+    {
+      emit (gen_rtx_PARALLEL (VOIDmode,
+        gen_rtvec (2,
+        gen_rtx_SET (VOIDmode, mem0, op0),
+        gen_rtx_SET (VOIDmode, mem1, op1))));
+
+      /* qiuji make the last emit 128bit gssq instruction frame-related.
+       * Add reg_note to show that it performs the operation described by
+       * FRAME_PATTERN.  */
+      rtx expr1 = mips_frame_set (mem0, op0);
+      rtx expr2 = mips_frame_set (mem1, op1);
+      mips_set_frame_expr (gen_rtx_PARALLEL (VOIDmode, gen_rtvec (2, expr1, expr2)));
+    }
+
+  /* restore register */
+  if(save_restore_flag == 1)
+    {
+      emit (gen_rtx_PARALLEL (VOIDmode,
+        gen_rtvec (2,
+        gen_rtx_SET (VOIDmode, op0, mem0),
+        gen_rtx_SET (VOIDmode, op1, mem1))));
+    }
+}
+
 /* Populate the current function's mips_frame_info structure.
 
    MIPS stack frames look like:
@@ -10929,13 +10976,16 @@ umips_build_save_restore (mips_save_restore_fn fn,
 
 static void
 mips_for_each_saved_gpr_and_fpr (HOST_WIDE_INT sp_offset,
-				 mips_save_restore_fn fn)
+				 mips_save_restore_fn fn,
+				 int save_restore_flag)
 {
   machine_mode fpr_mode;
   int regno;
   const struct mips_frame_info *frame = &cfun->machine->frame;
   HOST_WIDE_INT offset;
   unsigned int mask;
+  int save_regno1 = 0;
+  int save_regno2 = 0;
 
   /* Save registers starting from high to low.  The debuggers prefer at least
      the return register be stored at func+4, and also it allows us not to
@@ -10947,37 +10997,135 @@ mips_for_each_saved_gpr_and_fpr (HOST_WIDE_INT sp_offset,
   if (TARGET_MICROMIPS)
     umips_build_save_restore (fn, &mask, &offset);
 
-  for (regno = GP_REG_LAST; regno >= GP_REG_FIRST; regno--)
-    if (BITSET_P (mask, regno - GP_REG_FIRST))
+  /* The loongson3a gs464 gss<l>q[c1] instructions offset has 9+4 bit equal to 4096
+   * Option -mno-gs464-func-save-restore-reg disable this. */
+  if(flag_sr_opt && TARGET_LOONGSON_3A
+     && TARGET_64BIT && !ABI_32 && (offset < 4096))
+  {/* FIXME: ABI */
+    for (regno = GP_REG_LAST; regno >= GP_REG_FIRST; regno--)
+    {
+      if (BITSET_P (mask, regno - GP_REG_FIRST))
       {
-	/* Record the ra offset for use by mips_function_profiler.  */
-	if (regno == RETURN_ADDR_REGNUM)
-	  cfun->machine->frame.ra_fp_offset = offset + sp_offset;
-	mips_save_restore_reg (word_mode, regno, offset, fn);
-	offset -= UNITS_PER_WORD;
+        /* Record the ra offset for use by mips_function_profiler.  */
+        if (regno == RETURN_ADDR_REGNUM)
+          cfun->machine->frame.ra_fp_offset = offset + sp_offset;
+
+        if(((offset - UNITS_PER_WORD) % 16 ) != 0)
+        {
+          mips_save_restore_reg (word_mode, regno, offset, fn);
+          offset -= UNITS_PER_WORD;
+          continue;
+        }
+        else
+        {
+          if(save_regno1 == 0)
+            save_regno1 = regno;
+          else
+             save_regno2 = regno;
+        }
+
       }
+
+      /* deal with pairs of saved regno, the offset is high addr */
+      if(save_regno2 != 0)
+      {
+        mips_gs464_save_restore_reg (DImode, save_regno1, save_regno2, offset, save_restore_flag);
+        offset -= 2 * UNITS_PER_WORD;
+        save_regno1 = save_regno2 = 0;
+      }
+
+    }
+
+    /* after for loops, there will be a single saved reg,
+     * deal with single saved regno */
+    if(save_regno1 != 0)
+    {
+      mips_save_restore_reg (word_mode, save_regno1, offset, fn);
+      offset -= UNITS_PER_WORD;
+    }
+  }
+  else
+  { /* other targets */
+    for (regno = GP_REG_LAST; regno >= GP_REG_FIRST; regno--)
+      if (BITSET_P (mask, regno - GP_REG_FIRST))
+        {
+          /* Record the ra offset for use by mips_function_profiler.  */
+          if (regno == RETURN_ADDR_REGNUM)
+            cfun->machine->frame.ra_fp_offset = offset + sp_offset;
+          mips_save_restore_reg (word_mode, regno, offset, fn);
+          offset -= UNITS_PER_WORD;
+        }
+  }
 
   /* This loop must iterate over the same space as its companion in
      mips_compute_frame_info.  */
   offset = cfun->machine->frame.fp_sp_offset - sp_offset;
   fpr_mode = (TARGET_SINGLE_FLOAT ? SFmode : DFmode);
-  for (regno = FP_REG_LAST - MAX_FPRS_PER_FMT + 1;
-       regno >= FP_REG_FIRST;
-       regno -= MAX_FPRS_PER_FMT)
-    if (BITSET_P (cfun->machine->frame.fmask, regno - FP_REG_FIRST))
+  save_regno1 = save_regno2 = 0;
+  if(flag_sr_opt && TARGET_LOONGSON_3A && TARGET_FLOAT64
+      && !ABI_32 && (fpr_mode == DFmode) && (offset < 4096))
+  {
+    for (regno = FP_REG_LAST - MAX_FPRS_PER_FMT + 1;
+         regno >= FP_REG_FIRST;
+         regno -= MAX_FPRS_PER_FMT)
+    {
+      if (BITSET_P (cfun->machine->frame.fmask, regno - FP_REG_FIRST))
       {
-	if (!TARGET_FLOAT64 && TARGET_DOUBLE_FLOAT
-	    && (fixed_regs[regno] || fixed_regs[regno + 1]))
-	  {
-	    if (fixed_regs[regno])
-	      mips_save_restore_reg (SFmode, regno + 1, offset, fn);
-	    else
-	      mips_save_restore_reg (SFmode, regno, offset, fn);
-	  }
-	else
-	  mips_save_restore_reg (fpr_mode, regno, offset, fn);
-	offset -= GET_MODE_SIZE (fpr_mode);
+        if(((offset - GET_MODE_SIZE (fpr_mode)) % 16 ) != 0)
+        {
+          mips_save_restore_reg (fpr_mode, regno, offset, fn);
+          offset -= GET_MODE_SIZE (fpr_mode);
+          continue;
+        }
+
+        else
+        {
+          if(save_regno1 == 0)
+            save_regno1 = regno;
+          else
+            save_regno2 = regno;
+        }
       }
+
+      /* deal with pairs of saved regno */
+      if(save_regno2 != 0)
+      {
+        mips_gs464_save_restore_reg (fpr_mode, save_regno1, save_regno2, offset, save_restore_flag);
+        offset -= 2 * GET_MODE_SIZE (fpr_mode);
+        save_regno1 = save_regno2 = 0;
+      }
+    }/*end of for*/
+
+    /* after for loops, there will be a single saved reg,
+     * deal with single saved regno */
+    if(save_regno1 != 0)
+    {
+      mips_save_restore_reg (fpr_mode, save_regno1, offset, fn);
+      offset -= GET_MODE_SIZE (fpr_mode);
+    }
+
+  }
+  else
+  { /* other targets */
+
+    for (regno = FP_REG_LAST - MAX_FPRS_PER_FMT + 1;
+        regno >= FP_REG_FIRST;
+        regno -= MAX_FPRS_PER_FMT)
+     if (BITSET_P (cfun->machine->frame.fmask, regno - FP_REG_FIRST))
+       {
+	 if (!TARGET_FLOAT64 && TARGET_DOUBLE_FLOAT
+	     && (fixed_regs[regno] || fixed_regs[regno + 1]))
+	   {
+	     if (fixed_regs[regno])
+	       mips_save_restore_reg (SFmode, regno + 1, offset, fn);
+	     else
+	       mips_save_restore_reg (SFmode, regno, offset, fn);
+	   }
+	 else
+	   mips_save_restore_reg (fpr_mode, regno, offset, fn);
+	 offset -= GET_MODE_SIZE (fpr_mode);
+       }
+   }
 }
 
 /* Return true if a move between register REGNO and its save slot (MEM)
@@ -10994,7 +11142,6 @@ mips_direct_save_slot_move_p (unsigned int regno, rtx mem, bool load_p)
   return mips_secondary_reload_class (REGNO_REG_CLASS (regno),
 				      GET_MODE (mem), mem, load_p) == NO_REGS;
 }
-
 /* Emit a move from SRC to DEST, given that one of them is a register
    save slot and that the other is a register.  TEMP is a temporary
    GPR of the same mode that is available if need be.  */
@@ -11584,7 +11731,7 @@ mips_expand_prologue (void)
 	      size -= step1;
 	    }
 	  mips_for_each_saved_acc (size, mips_save_reg);
-	  mips_for_each_saved_gpr_and_fpr (size, mips_save_reg);
+	  mips_for_each_saved_gpr_and_fpr (size, mips_save_reg,0);
 	}
     }
 
@@ -11910,7 +12057,7 @@ mips_expand_epilogue (bool sibcall_p)
       /* Restore the registers.  */
       mips_for_each_saved_acc (frame->total_size - step2, mips_restore_reg);
       mips_for_each_saved_gpr_and_fpr (frame->total_size - step2,
-				       mips_restore_reg);
+				       mips_restore_reg,1);
 
       if (cfun->machine->interrupt_handler_p)
 	{
@@ -18620,6 +18767,123 @@ mips_prepare_pch_save (void)
   mips_set_compression_mode (0);
   mips16_globals = 0;
 }
+
+/* Loongson Test for GS464 128 bit offset mem is legaly */
+
+bool
+mips_gs464_128_store_p(rtx operands[])
+{
+  int offset1;
+  int offset2;
+  rtx dst1 = operands[0];
+  rtx dst2 = operands[2];
+  rtx src1 = operands[1];
+  rtx src2 = operands[3];
+
+  if(GET_CODE(XEXP(dst1,0)) == PLUS)
+  {
+    offset1 = XINT(XEXP(XEXP(dst1,0),1),0);
+  }
+  else if(GET_CODE(XEXP(dst1,0)) == MINUS)
+  {
+    offset1 = XINT(XEXP(XEXP(dst1,0),1),0);
+  }
+  else
+  {
+    offset1 = 0;
+  }
+
+  if(GET_CODE(XEXP(dst2,0)) == PLUS)
+  {
+    offset2= XINT(XEXP(XEXP(dst2,0),1),0);
+  }
+  else if(GET_CODE(XEXP(dst2,0)) == MINUS)
+  {
+    offset2= XINT(XEXP(XEXP(dst2,0),1),0);
+  }
+  else
+  {
+    offset2 = 0;
+  }
+
+  if(offset2 % 16 !=0)
+  {
+   /*store offset is not align!*/
+    return false;
+  }
+
+  if( offset1 - offset2 !=8)
+  {
+   /*store offset diff is not 8!*/
+    return false;
+  }
+
+  if( offset2>4095 || offset2<-4096)
+  {
+   /*load offset out of range!*/
+    return false;
+  }
+
+  return true;
+}
+
+bool
+mips_gs464_128_load_p(rtx operands[])
+{
+  int offset1;
+  int offset2;
+  rtx dst1 = operands[0];
+  rtx dst2 = operands[2];
+  rtx src1 = operands[1];
+  rtx src2 = operands[3];
+
+  if(GET_CODE(XEXP(src1,0)) == PLUS)
+  {
+    offset1 = XINT(XEXP(XEXP(src1,0),1),0);
+  }
+  else if(GET_CODE(XEXP(src1,0)) == MINUS)
+  {
+    offset1 = XINT(XEXP(XEXP(src1,0),1),0);
+  }
+  else
+  {
+    offset1 = 0;
+  }
+
+  if(GET_CODE(XEXP(src2,0)) == PLUS)
+  {
+    offset2= XINT(XEXP(XEXP(src2,0),1),0);
+  }
+  else if(GET_CODE(XEXP(src2,0)) == MINUS)
+  {
+    offset2= XINT(XEXP(XEXP(src2,0),1),0);
+  }
+  else
+  {
+    offset2 =0;
+  }
+
+  if(offset2 % 16 !=0)
+  {
+   /*load offset is not align!*/
+    return false;
+  }
+
+  if( offset1 - offset2 !=8)
+  {
+   /*load offset diff is not 8!*/
+    return false;
+  }
+
+  if( offset2>4095 || offset2<-4096)
+  {
+   /*load offset out of range!*/
+     return false;
+  }
+
+  return true;
+}
+
 
 /* Generate or test for an insn that supports a constant permutation.  */
 

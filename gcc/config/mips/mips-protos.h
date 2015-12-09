@@ -366,4 +366,8 @@ typedef rtx (*mulsidi3_gen_fn) (rtx, rtx, rtx);
 extern mulsidi3_gen_fn mips_mulsidi3_gen_fn (enum rtx_code);
 #endif
 
+/* Loongson gs464 */
+extern bool mips_gs464_128_store_p (rtx[]);
+extern bool mips_gs464_128_load_p (rtx[]);
+
 #endif /* ! GCC_MIPS_PROTOS_H */

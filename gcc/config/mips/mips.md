@@ -2902,9 +2902,9 @@
   "TARGET_LOONGSON_2EF || TARGET_LOONGSON_3A || ISA_HAS_R6<D>DIV"
   {
     if (TARGET_LOONGSON_2EF)
-      return mips_output_division ("<d>mod<u>.g\t%0,%1,%2", operands);
+      return "<d>mod<u>.g\t%0,%1,%2";
     else if (TARGET_LOONGSON_3A)
-      return mips_output_division ("gs<d>mod<u>\t%0,%1,%2", operands);
+      return "gs<d>mod<u>\t%0,%1,%2";
     else
       return mips_output_division ("<d>mod<u>\t%0,%1,%2", operands);
   }

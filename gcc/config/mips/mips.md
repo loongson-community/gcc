@@ -1521,7 +1521,8 @@
 (define_expand "mul<mode>3"
   [(set (match_operand:GPR 0 "register_operand")
 	(mult:GPR (match_operand:GPR 1 "register_operand")
-		  (match_operand:GPR 2 "register_operand")))]
+		  (match_operand:GPR 2 "register_operand")))
+	          (clobber (match_scratch:GPR 3))]
   "ISA_HAS_<D>MULT || ISA_HAS_R6<D>MUL"
 {
   rtx lo;
@@ -1548,13 +1549,14 @@
 (define_insn "mul<mode>3_mul3_nohilo"
   [(set (match_operand:GPR 0 "register_operand" "=d")
         (mult:GPR (match_operand:GPR 1 "register_operand" "d")
-                  (match_operand:GPR 2 "register_operand" "d")))]
+                  (match_operand:GPR 2 "register_operand" "d")))
+	          (clobber (match_scratch:GPR 3  "=l"))]
   "TARGET_LOONGSON_2EF || TARGET_LOONGSON_3A || ISA_HAS_R6<D>MUL"
 {
   if (TARGET_LOONGSON_2EF)
-    return "<d>multu.g\t%0,%1,%2";
+    return "<d>mult.g\t%0,%1,%2";
   else if (TARGET_LOONGSON_3A)
-    return "gs<d>multu\t%0,%1,%2";
+    return "gs<d>mult\t%0,%1,%2";
   else
     return "<d>mul\t%0,%1,%2";
 }

@@ -857,6 +857,16 @@
 (define_mode_attr loadx [(SF "lwxc1") (DF "ldxc1") (V2SF "ldxc1")])
 (define_mode_attr storex [(SF "swxc1") (DF "sdxc1") (V2SF "sdxc1")])
 
+;; Similarly for LOONGSON indexed GPR loads and stores.
+(define_mode_attr gsloadx [(QI "gslbx")
+                           (HI "gslhx")
+                           (SI "gslwx")
+                           (DI "gsldx")])
+(define_mode_attr gsstorex [(QI "gssbx")
+                            (HI "gsshx")
+                            (SI "gsswx")
+                            (DI "gssdx")])
+
 ;; The unextended ranges of the MIPS16 addiu and daddiu instructions
 ;; are different.  Some forms of unextended addiu have an 8-bit immediate
 ;; field but the equivalent daddiu has only a 5-bit field.
@@ -4732,6 +4742,48 @@
   "<ANYF:storex>\t%0,%1(%2)"
   [(set_attr "type" "fpidxstore")
    (set_attr "mode" "<ANYF:UNITMODE>")])
+
+;; Loongson index address load and store.
+(define_insn "*<GPR:gsloadx>_<P:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=d")
+        (mem:GPR
+                (plus:P (match_operand:P 1 "register_operand" "d")
+                        (match_operand:P 2 "register_operand" "d"))))]
+  "TARGET_LOONGSON_3A"
+  "<GPR:gsloadx>\t%0,0(%1,%2)"
+  [(set_attr "type" "load")
+   (set_attr "mode" "<GPR:MODE>")])
+
+(define_insn "*<GPR:gsstorex>_<P:mode>"
+  [(set (mem:GPR (plus:P (match_operand:P 1 "register_operand" "d")
+                         (match_operand:P 2 "register_operand" "d")))
+        (match_operand:GPR 0 "register_operand" "d"))]
+  "TARGET_LOONGSON_3A"
+  "<GPR:gsstorex>\t%0,0(%1,%2)"
+  [(set_attr "type" "store")
+   (set_attr "mode" "<GPR:MODE>")])
+
+;; SHORT mode sign_extend.
+(define_insn "*extend_<SHORT:gsloadx>_<GPR:mode>"
+  [(set (match_operand:GPR 0 "register_operand" "=d")
+        (sign_extend:GPR
+          (mem:SHORT
+            (plus:P (match_operand:P 1 "register_operand" "d")
+                    (match_operand:P 2 "register_operand" "d")))))]
+  "TARGET_LOONGSON_3A"
+  "<SHORT:gsloadx>\t%0,0(%1,%2)"
+  [(set_attr "type" "load")
+   (set_attr "mode" "<GPR:MODE>")])
+
+(define_insn "*extend_<SHORT:gsstorex>"
+  [(set (mem:SHORT (plus:P (match_operand:P 1 "register_operand" "d")
+                           (match_operand:P 2 "register_operand" "d")))
+        (match_operand:SHORT 0 "register_operand" "d"))]
+  "TARGET_LOONGSON_3A"
+  "<SHORT:gsstorex>\t%0,0(%1,%2)"
+  [(set_attr "type" "store")
+   (set_attr "mode" "SI")])
+
 
 ;; Scaled indexed address load.
 ;; Per md.texi, we only need to look for a pattern with multiply in the

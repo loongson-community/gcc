@@ -428,6 +428,10 @@ mframe-header-opt
 Target Report Var(flag_frame_header_optimization) Optimization
 Optimize frame header.
 
+mgs464-func-save-restore-reg
+Target Report Var(flag_sr_opt) Init(1) Optimization
+Use gss<l>q[c1] instructions for save and restore reg  in functions prologue and epilogue
+
 noasmopt
 Driver
 

@@ -1,3 +1,10 @@
+2018-01-30  Leslie Zhai  <lesliezhai@llvm.org.cn>
+
+	Backported PR rtl-optimization/65980 to GCC 5.5
+	* jump.c (rtx_renumbered_equal_p) <case LABEL_REF>: Use
+	next_nonnote_nondebug_insn instead of next_real_insn and
+	skip over CODE_LABELs too.
+
 2018-01-30  Leslie Zhai <lesliezhai@llvm.org.cn>
 
 	Backported PR tree-optimization/66299 to GCC 5.5

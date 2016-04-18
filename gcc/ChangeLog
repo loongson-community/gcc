@@ -1,3 +1,9 @@
+2018-01-20  Leslie Zhai <lesliezhai@llvm.org.cn>
+
+	Backported PR tree-optimization/70701 to GCC 5.5
+	* tree-ssa-sccvn.c (vn_reference_lookup_3): Resolve fully constant
+	references after translating through a memcpy.
+
 2017-10-10  Release Manager
 
 	* GCC 5.5.0 released.

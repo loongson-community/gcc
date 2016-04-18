@@ -1,3 +1,8 @@
+2018-01-20  Leslie Zhai <lesliezhai@llvm.org.cn>
+
+	Backported PR tree-optimization/70701 to GCC 5.5
+	* gcc.dg/tree-ssa/ssa-fre-53.c: New testcase.
+
 2017-10-10  Release Manager
 
 	* GCC 5.5.0 released.

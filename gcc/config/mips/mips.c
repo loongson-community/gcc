@@ -13254,7 +13254,8 @@ mips_process_sync_loop (rtx_insn *insn, rtx *operands)
   mips_multi_start ();
 
   /* Output the release side of the memory barrier.  */
-  if (need_atomic_barrier_p (model, true))
+  /* The loongson3a need sync after label "1:", disable this */
+  if (need_atomic_barrier_p (model, true) && ! TARGET_LOONGSON_3A)
     {
       if (required_oldval == 0 && TARGET_OCTEON)
 	{
@@ -13377,7 +13378,8 @@ mips_process_sync_loop (rtx_insn *insn, rtx *operands)
     mips_multi_add_insn ("li\t%0,1", cmp, NULL);
 
   /* Output the acquire side of the memory barrier.  */
-  if (TARGET_SYNC_AFTER_SC && need_atomic_barrier_p (model, false))
+  /* The loongson3a need sync after label "2:", disable this */
+  if (TARGET_SYNC_AFTER_SC && need_atomic_barrier_p (model, false) && ! TARGET_LOONGSON_3A)
     mips_multi_add_insn ("sync", NULL);
 
   /* Output the exit label, if needed.  */

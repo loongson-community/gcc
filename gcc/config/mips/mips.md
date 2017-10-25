@@ -4605,7 +4605,11 @@
    (set (attr "mode")
    	(if_then_else (eq_attr "move_type" "imul")
 		      (const_string "SI")
-		      (const_string "DI")))])
+		      (const_string "DI")))
+   (set (attr "length")
+   	(if_then_else (eq_attr "move_type" "load,fpload,mtc,mfc")
+		      (const_int 8)
+		      (const_int 4)))])
 
 (define_insn "*movdi_32bit_mips16"
   [(set (match_operand:DI 0 "nonimmediate_operand" "=d,y,d,d,d,d,m,*d")
@@ -4625,7 +4629,11 @@
        || reg_or_0_operand (operands[1], DImode))"
   { return mips_output_move (operands[0], operands[1]); }
   [(set_attr "move_type" "move,const,const,load,store,mtc,fpload,mfc,fpstore,mtlo,mflo,mtc,fpload,mfc,fpstore")
-   (set_attr "mode" "DI")])
+   (set_attr "mode" "DI")
+   (set (attr "length")
+   	(if_then_else (eq_attr "move_type" "load,fpload,mtc,mfc")
+		      (const_int 8)
+		      (const_int 4)))])
 
 (define_insn "*movdi_64bit_mips16"
   [(set (match_operand:DI 0 "nonimmediate_operand" "=d,y,d,d,d,d,d,d,m,*d")
@@ -4635,7 +4643,11 @@
        || register_operand (operands[1], DImode))"
   { return mips_output_move (operands[0], operands[1]); }
   [(set_attr "move_type" "move,move,move,const,constN,const,loadpool,load,store,mflo")
-   (set_attr "mode" "DI")])
+   (set_attr "mode" "DI")
+   (set (attr "length")
+   	(if_then_else (eq_attr "move_type" "load,fpload,mtc,mfc")
+		      (const_int 8)
+		      (const_int 4)))])
 
 ;; On the mips16, we can split ld $r,N($r) into an add and a load,
 ;; when the original load is a 4 byte instruction but the add and the

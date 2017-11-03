@@ -4572,7 +4572,8 @@
   ""
   "<load>\t%0,%R2(%1)"
   [(set_attr "got" "load")
-   (set_attr "mode" "<MODE>")])
+   (set_attr "mode" "<MODE>")
+   (set_attr "length" "8")])
 
 ;; Instructions for adding the low 16 bits of an address to a register.
 ;; Operand 2 is the address: mips_print_operand works out which relocation
@@ -6887,7 +6888,8 @@
   "TARGET_USE_GOT"
   "<load>\t%0,%R2(%1)"
   [(set_attr "got" "load")
-   (set_attr "mode" "<MODE>")])
+   (set_attr "mode" "<MODE>")
+   (set_attr "length" "8")])
 
 (define_insn "set_got_version"
   [(set (reg:SI GOT_VERSION_REGNUM)

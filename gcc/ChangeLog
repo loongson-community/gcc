@@ -1,3 +1,9 @@
+2018-01-20  Leslie Zhai  <lesliezhai@llvm.org.cn>
+
+	Backported PR tree-optimization/83128 to GCC 5.5
+	* tree-ssa-sccvn.c (fully_constant_vn_reference_p): Handle STRING_CSTs.
+	(vn_reference_lookup_3): Likewise.
+
 2018-01-20  Leslie Zhai <lesliezhai@llvm.org.cn>
 
 	Backported PR tree-optimization/70701 to GCC 5.5

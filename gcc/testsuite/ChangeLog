@@ -1,3 +1,8 @@
+2018-01-20  Leslie Zhai  <lesliezhai@llvm.org.cn>
+
+	Backported PR tree-optimization/83128 to GCC 5.5
+	* gcc.dg/tree-ssa/ssa-fre-62.c: New testcase.
+
 2018-01-20  Leslie Zhai <lesliezhai@llvm.org.cn>
 
 	Backported PR tree-optimization/70701 to GCC 5.5

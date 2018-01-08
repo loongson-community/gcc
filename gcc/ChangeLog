@@ -1,3 +1,8 @@
+2018-01-20  Leslie Zhai  <lesliezhai@llvm.org.cn>
+
+	Backported PR middle-end/83580 to GCC 5.5
+	* tree-data-ref.c (split_constant_offset): Remove STRIP_NOPS.
+
 2018-01-21  Leslie Zhai  <lesliezhai@llvm.org.cn>
 
 	Backported PR ipa/82256 to GCC 5.5

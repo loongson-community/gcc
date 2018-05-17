@@ -4824,7 +4824,7 @@
         (mem:GPR
                 (plus:P (match_operand:P 1 "register_operand" "d")
                         (match_operand:P 2 "register_operand" "d"))))]
-  "TARGET_LOONGSON_3A"
+  "TARGET_LOONGSON_3A && TARGET_64BIT"
   "<GPR:gsloadx>\t%0,0(%1,%2)"
   [(set_attr "type" "load")
    (set_attr "mode" "<GPR:MODE>")])
@@ -4833,7 +4833,7 @@
   [(set (mem:GPR (plus:P (match_operand:P 1 "register_operand" "d")
                          (match_operand:P 2 "register_operand" "d")))
         (match_operand:GPR 0 "register_operand" "d"))]
-  "TARGET_LOONGSON_3A"
+  "TARGET_LOONGSON_3A && TARGET_64BIT"
   "<GPR:gsstorex>\t%0,0(%1,%2)"
   [(set_attr "type" "store")
    (set_attr "mode" "<GPR:MODE>")])
@@ -4845,7 +4845,7 @@
           (mem:SHORT
             (plus:P (match_operand:P 1 "register_operand" "d")
                     (match_operand:P 2 "register_operand" "d")))))]
-  "TARGET_LOONGSON_3A"
+  "TARGET_LOONGSON_3A && TARGET_64BIT"
   "<SHORT:gsloadx>\t%0,0(%1,%2)"
   [(set_attr "type" "load")
    (set_attr "mode" "<GPR:MODE>")])
@@ -4854,7 +4854,7 @@
   [(set (mem:SHORT (plus:P (match_operand:P 1 "register_operand" "d")
                            (match_operand:P 2 "register_operand" "d")))
         (match_operand:SHORT 0 "register_operand" "d"))]
-  "TARGET_LOONGSON_3A"
+  "TARGET_LOONGSON_3A && TARGET_64BIT"
   "<SHORT:gsstorex>\t%0,0(%1,%2)"
   [(set_attr "type" "store")
    (set_attr "mode" "SI")])

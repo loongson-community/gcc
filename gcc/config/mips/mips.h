@@ -266,7 +266,9 @@ struct mips_cpu_info {
 #define TARGET_LOONGSON_2E          (mips_arch == PROCESSOR_LOONGSON_2E)
 #define TARGET_LOONGSON_2F          (mips_arch == PROCESSOR_LOONGSON_2F)
 #define TARGET_LOONGSON_2EF         (TARGET_LOONGSON_2E || TARGET_LOONGSON_2F)
-#define TARGET_LOONGSON_3A          (mips_arch == PROCESSOR_LOONGSON_3A)
+#define TARGET_GS464		    (mips_arch == PROCESSOR_GS464)
+#define TARGET_GS464E		    (mips_arch == PROCESSOR_GS464E)
+#define TARGET_GS264E		    (mips_arch == PROCESSOR_GS264E)
 #define TARGET_MIPS3900             (mips_arch == PROCESSOR_R3900)
 #define TARGET_MIPS4000             (mips_arch == PROCESSOR_R4000)
 #define TARGET_MIPS4120             (mips_arch == PROCESSOR_R4120)
@@ -298,7 +300,9 @@ struct mips_cpu_info {
 				     || mips_tune == PROCESSOR_74KF3_2)
 #define TUNE_LOONGSON_2EF           (mips_tune == PROCESSOR_LOONGSON_2E	\
 				     || mips_tune == PROCESSOR_LOONGSON_2F)
-#define TUNE_LOONGSON_3A            (mips_tune == PROCESSOR_LOONGSON_3A)
+#define TUNE_GS464		    (mips_tune == PROCESSOR_GS464)
+#define TUNE_GS464E		    (mips_tune == PROCESSOR_GS464E)
+#define TUNE_GS264E		    (mips_tune == PROCESSOR_GS264E)
 #define TUNE_MIPS3000               (mips_tune == PROCESSOR_R3000)
 #define TUNE_MIPS3900               (mips_tune == PROCESSOR_R3900)
 #define TUNE_MIPS4000               (mips_tune == PROCESSOR_R4000)
@@ -317,13 +321,6 @@ struct mips_cpu_info {
 				     || mips_tune == PROCESSOR_SB1A)
 #define TUNE_P5600                  (mips_tune == PROCESSOR_P5600)
 #define TUNE_I6400                  (mips_tune == PROCESSOR_I6400)
-
-/* Whether vector modes and intrinsics for ST Microelectronics
-   Loongson-2E/2F processors should be enabled.  In o32 pairs of
-   floating-point registers provide 64-bit values.  */
-#define TARGET_LOONGSON_VECTORS	    (TARGET_HARD_FLOAT_ABI		\
-				     && (TARGET_LOONGSON_2EF		\
-					 || TARGET_LOONGSON_3A))
 
 /* True if the pre-reload scheduler should try to create chains of
    multiply-add or multiply-subtract instructions.  For example,
@@ -595,9 +592,12 @@ struct mips_cpu_info {
       if (TARGET_ABICALLS)						\
 	builtin_define ("__mips_abicalls");				\
 									\
-      /* Whether Loongson vector modes are enabled.  */                 \
-      if (TARGET_LOONGSON_VECTORS)					\
-        builtin_define ("__mips_loongson_vector_rev");                  \
+      /* Whether Loongson vector modes are enabled.  */			\
+      if (TARGET_LOONGSON_MMI)						\
+	{								\
+	  builtin_define ("__mips_loongson_vector_rev");		\
+	  builtin_define ("__mips_loongson_mmi");			\
+	}								\
 									\
       /* Historical Octeon macro.  */					\
       if (TARGET_OCTEON)						\
@@ -779,7 +779,8 @@ struct mips_cpu_info {
      %{march=mips32r6: -mips32r6} \
      %{march=mips64|march=5k*|march=20k*|march=sb1*|march=sr71000 \
        |march=xlr: -mips64} \
-     %{march=mips64r2|march=loongson3a|march=octeon|march=xlp: -mips64r2} \
+     %{march=mips64r2|march=loongson3a|march=gs464|march=gs464e|march=gs264e \
+       |march=octeon|march=xlp: -mips64r2} \
      %{march=mips64r3: -mips64r3} \
      %{march=mips64r5: -mips64r5} \
      %{march=mips64r6|march=i6400: -mips64r6}}"
@@ -935,7 +936,7 @@ struct mips_cpu_info {
 
 /* ISA has 32 single-precision registers.  */
 #define ISA_HAS_ODD_SPREG	((mips_isa_rev >= 1			\
-				  && !TARGET_LOONGSON_3A)		\
+				  && !TARGET_GS464)			\
 				 || TARGET_FLOAT64			\
 				 || TARGET_MIPS5900)
 
@@ -978,7 +979,7 @@ struct mips_cpu_info {
    because the former are faster and can also have the effect of reducing
    code size.  */
 #define ISA_AVOID_DIV_HILO	((TARGET_LOONGSON_2EF			\
-				  || TARGET_LOONGSON_3A)		\
+				  || TARGET_GS464)			\
 				 && !TARGET_MIPS16)
 
 /* ISA supports instructions DDIV and DDIVU. */
@@ -1071,14 +1072,14 @@ struct mips_cpu_info {
    'd = [+-] (a * b [+-] c)'.  */
 #define ISA_HAS_FUSED_MADD4	(mips_madd4				\
 				 && (TARGET_MIPS8000			\
-				     || TARGET_LOONGSON_3A))
+				     || TARGET_GS464))
 
 /* ISA has 4 operand unfused madd instructions of the form
    'd = [+-] (a * b [+-] c)'.  */
 #define ISA_HAS_UNFUSED_MADD4	(mips_madd4				\
 				 && ISA_HAS_FP4				\
 				 && !TARGET_MIPS8000			\
-				 && !TARGET_LOONGSON_3A)
+				 && !TARGET_GS464)
 
 /* ISA has 3 operand r6 fused madd instructions of the form
    'c = c [+-] (a * b)'.  */
@@ -1113,6 +1114,9 @@ struct mips_cpu_info {
 
 /* ISA has count leading zeroes/ones instruction (not implemented).  */
 #define ISA_HAS_CLZ_CLO		(mips_isa_rev >= 1 && !TARGET_MIPS16)
+
+/* ISA has count tailing zeroes/ones instruction (not implemented).  */
+#define ISA_HAS_CTZ_CTO		(TARGET_LOONGSON_EXT2)
 
 /* ISA has three operand multiply instructions that put
    the high part in an accumulator: mulhi or mulhiu.  */
@@ -1355,6 +1359,7 @@ struct mips_cpu_info {
 %{mvirt} %{mno-virt} \
 %{mxpa} %{mno-xpa} \
 %{mmsa} %{mno-msa} \
+%{mloongson-mmi} %{mno-loongson-mmi} \
 %{msmartmips} %{mno-smartmips} \
 %{mmt} %{mno-mt} \
 %{mfix-rm7000} %{mno-fix-rm7000} \
@@ -2631,9 +2636,9 @@ typedef struct mips_args {
 #define SLOW_BYTE_ACCESS (!TARGET_MIPS16)
 
 /* Standard MIPS integer shifts truncate the shift amount to the
-   width of the shifted operand.  However, Loongson vector shifts
+   width of the shifted operand.  However, Loongson MMI shifts
    do not truncate the shift amount at all.  */
-#define SHIFT_COUNT_TRUNCATED (!TARGET_LOONGSON_VECTORS)
+#define SHIFT_COUNT_TRUNCATED (!TARGET_LOONGSON_MMI)
 
 
 /* Specify the machine mode that pointers have.

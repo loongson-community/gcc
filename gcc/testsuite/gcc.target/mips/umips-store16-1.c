@@ -1,4 +1,4 @@
-/* { dg-options "(-mmicromips)" } */
+/* { dg-options "(-mmicromips) forbid_cpu=loongson3a" } */
 /* { dg-do assemble } */
 
 register unsigned int global asm ("$16");

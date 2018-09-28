@@ -16,8 +16,8 @@
 # along with GCC; see the file COPYING3.  If not see
 # <http://www.gnu.org/licenses/>.
 
-MULTILIB_OPTIONS = march=loongson3a/march=loongson2e/march=loongson2f mabi=n32/mabi=32/mabi=64
-MULTILIB_DIRNAMES = 3a 2e 2f lib32 lib lib64
+MULTILIB_OPTIONS = march=loongson3a/march=loongson2e/march=loongson2f/march=gs464/march=gs464e/march=gs264e mabi=n32/mabi=32/mabi=64
+MULTILIB_DIRNAMES = 3a 2e 2f gs464 gs464e gs264e lib32 lib lib64
 
 MULTILIB_OSDIRNAMES  = march.loongson2e/mabi.n32=../lib32/2e
 MULTILIB_OSDIRNAMES += march.loongson2e/mabi.32=../lib/2e
@@ -28,6 +28,15 @@ MULTILIB_OSDIRNAMES += march.loongson2f/mabi.64=../lib64/2f
 MULTILIB_OSDIRNAMES += march.loongson3a/mabi.n32=../lib32/3a
 MULTILIB_OSDIRNAMES += march.loongson3a/mabi.32=../lib/3a
 MULTILIB_OSDIRNAMES += march.loongson3a/mabi.64=../lib64/3a
+MULTILIB_OSDIRNAMES += march.gs464/mabi.n32=../lib32/gs464
+MULTILIB_OSDIRNAMES += march.gs464/mabi.32=../lib/gs464
+MULTILIB_OSDIRNAMES += march.gs464/mabi.64=../lib64/gs464
+MULTILIB_OSDIRNAMES += march.gs464e/mabi.n32=../lib32/gs464e
+MULTILIB_OSDIRNAMES += march.gs464e/mabi.32=../lib/gs464e
+MULTILIB_OSDIRNAMES += march.gs464e/mabi.64=../lib64/gs464e
+MULTILIB_OSDIRNAMES += march.gs264e/mabi.n32=../lib32/gs264e
+MULTILIB_OSDIRNAMES += march.gs264e/mabi.32=../lib/gs264e
+MULTILIB_OSDIRNAMES += march.gs264e/mabi.64=../lib64/gs264e
 MULTILIB_OSDIRNAMES += mabi.n32=../lib32
 MULTILIB_OSDIRNAMES += mabi.32=../lib
 MULTILIB_OSDIRNAMES += mabi.64=../lib64

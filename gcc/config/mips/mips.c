@@ -826,7 +826,13 @@ static const struct mips_rtx_cost_data
   { /* Loongson-2F */
     DEFAULT_COSTS
   },
-  { /* Loongson-3A */
+  { /* Loongson gs464.  */
+    DEFAULT_COSTS
+  },
+  { /* Loongson gs464e.  */
+    DEFAULT_COSTS
+  },
+  { /* Loongson gs264e.  */
     DEFAULT_COSTS
   },
   { /* M4k */
@@ -11646,7 +11652,7 @@ mips_for_each_saved_gpr_and_fpr (HOST_WIDE_INT sp_offset,
 
   /* The loongson3a gs464 gss<l>q[c1] instructions offset has 9+4 bit equal to 4096
    * Option -mno-gs464-func-save-restore-reg disable this. */
-  if(flag_sr_opt && TARGET_LOONGSON_3A
+  if(flag_sr_opt && TARGET_LOONGSON_EXT
      && TARGET_64BIT && !ABI_32 && (offset < 4096))
   {/* FIXME: ABI */
     for (regno = GP_REG_LAST; regno >= GP_REG_FIRST; regno--)
@@ -11709,7 +11715,7 @@ mips_for_each_saved_gpr_and_fpr (HOST_WIDE_INT sp_offset,
   offset = cfun->machine->frame.fp_sp_offset - sp_offset;
   fpr_mode = (TARGET_SINGLE_FLOAT ? SFmode : DFmode);
   save_regno1 = save_regno2 = 0;
-  if(flag_sr_opt && TARGET_LOONGSON_3A && TARGET_FLOAT64
+  if(flag_sr_opt && TARGET_LOONGSON_EXT && TARGET_FLOAT64
       && !ABI_32 && (fpr_mode == DFmode) && (offset < 4096))
   {
     for (regno = FP_REG_LAST - MAX_FPRS_PER_FMT + 1;
@@ -12921,8 +12927,9 @@ mips_hard_regno_mode_ok_uncached (unsigned int regno, machine_mode mode)
       if (mode == CCFmode)
 	return !(TARGET_FLOATXX && (regno & 1) != 0);
 
-      /* Allow 64-bit vector modes for Loongson-2E/2F.  */
-      if (TARGET_LOONGSON_VECTORS
+      /* Allow 64-bit vector modes for Loongson MultiMedia extensions
+	 Instructions (MMI).  */
+      if (TARGET_LOONGSON_MMI
 	  && (mode == V2SImode
 	      || mode == V4HImode
 	      || mode == V8QImode
@@ -13492,7 +13499,7 @@ mips_vector_mode_supported_p (machine_mode mode)
     case E_V2SImode:
     case E_V4HImode:
     case E_V8QImode:
-      return TARGET_LOONGSON_VECTORS;
+      return TARGET_LOONGSON_MMI;
 
     default:
       return MSA_SUPPORTED_MODE_P (mode);
@@ -14245,7 +14252,7 @@ mips_process_sync_loop (rtx_insn *insn, rtx *operands)
 
   /* Output the release side of the memory barrier.  */
   /* The loongson3a need sync after label "1:", disable this */
-  if (need_atomic_barrier_p (model, true) && ! TARGET_LOONGSON_3A)
+  if (need_atomic_barrier_p (model, true) && ! TARGET_LOONGSON_EXT)
     {
       if (required_oldval == 0 && TARGET_OCTEON)
 	{
@@ -14379,7 +14386,7 @@ mips_process_sync_loop (rtx_insn *insn, rtx *operands)
 
   /* Output the acquire side of the memory barrier.  */
   /* The loongson3a need sync after label "2:", disable this */
-  if (TARGET_SYNC_AFTER_SC && need_atomic_barrier_p (model, false) && ! TARGET_LOONGSON_3A)
+  if (TARGET_SYNC_AFTER_SC && need_atomic_barrier_p (model, false) && ! TARGET_LOONGSON_EXT)
     mips_multi_add_insn ("sync", NULL);
 
   /* Output the exit label, if needed.  */
@@ -14734,6 +14741,7 @@ mips_issue_rate (void)
     case PROCESSOR_OCTEON2:
     case PROCESSOR_OCTEON3:
     case PROCESSOR_I6400:
+    case PROCESSOR_GS264E:
       return 2;
 
     case PROCESSOR_SB1:
@@ -14746,7 +14754,8 @@ mips_issue_rate (void)
 
     case PROCESSOR_LOONGSON_2E:
     case PROCESSOR_LOONGSON_2F:
-    case PROCESSOR_LOONGSON_3A:
+    case PROCESSOR_GS464:
+    case PROCESSOR_GS464E:
     case PROCESSOR_P5600:
       return 4;
 
@@ -14877,10 +14886,10 @@ mips_multipass_dfa_lookahead (void)
   if (TUNE_SB1)
     return 4;
 
-  if (TUNE_LOONGSON_2EF || TUNE_LOONGSON_3A)
+  if (TUNE_LOONGSON_2EF || TUNE_GS464 || TUNE_GS464E)
     return 4;
 
-  if (TUNE_OCTEON)
+  if (TUNE_OCTEON || TUNE_GS264E)
     return 2;
 
   if (TUNE_P5600 || TUNE_I6400)
@@ -15335,7 +15344,7 @@ AVAIL_NON_MIPS16 (dspr2, TARGET_DSPR2)
 AVAIL_NON_MIPS16 (dsp_32, !TARGET_64BIT && TARGET_DSP)
 AVAIL_NON_MIPS16 (dsp_64, TARGET_64BIT && TARGET_DSP)
 AVAIL_NON_MIPS16 (dspr2_32, !TARGET_64BIT && TARGET_DSPR2)
-AVAIL_NON_MIPS16 (loongson, TARGET_LOONGSON_VECTORS)
+AVAIL_NON_MIPS16 (loongson, TARGET_LOONGSON_MMI)
 AVAIL_NON_MIPS16 (cache, TARGET_CACHE_BUILTIN)
 AVAIL_NON_MIPS16 (msa, TARGET_MSA)
 
@@ -20345,6 +20354,43 @@ mips_option_override (void)
       TARGET_DSPR2 = false;
     }
 
+  /* Make sure that when TARGET_LOONGSON_MMI is true, TARGET_HARD_FLOAT_ABI
+     is true.  In o32 pairs of floating-point registers provide 64-bit
+     values.  */
+  if (TARGET_LOONGSON_MMI &&  !TARGET_HARD_FLOAT_ABI)
+    error ("%<-mloongson-mmi%> must be used with %<-mhard-float%>");
+
+  /* Default to enable Loongson MMI on Longson 2e, 2f, gs464, gs464e
+   * or gs264e target.  */
+  if ((target_flags_explicit & MASK_LOONGSON_MMI) == 0
+      && ((strcmp (mips_arch_info->name, "loongson2e") == 0)
+	  || (strcmp (mips_arch_info->name, "loongson2f") == 0)
+	  || (strcmp (mips_arch_info->name, "loongson3a") == 0)
+          || (strcmp (mips_arch_info->name, "gs464") == 0)
+          || (strcmp (mips_arch_info->name, "gs464e") == 0)
+          || (strcmp (mips_arch_info->name, "gs264e") == 0)))
+    target_flags |= MASK_LOONGSON_MMI;
+
+  /* Default to enable Loongson EXT on Longson gs464, gs464e
+   * or gs264e target.  */
+   if ((target_flags_explicit & MASK_LOONGSON_EXT) == 0
+      && ((strcmp (mips_arch_info->name, "loongson3a") == 0)
+         || (strcmp (mips_arch_info->name, "gs464") == 0)
+	 || (strcmp (mips_arch_info->name, "gs464e") == 0)
+         || (strcmp (mips_arch_info->name, "gs264e") == 0)))
+     target_flags |= MASK_LOONGSON_EXT;
+
+  /* Default to enable Loongson EXT2 on gs464e or gs264e target.  */
+  if ((target_flags_explicit & MASK_LOONGSON_EXT2) == 0
+     && ((strcmp (mips_arch_info->name, "gs464e") == 0)
+        || (strcmp (mips_arch_info->name, "gs264e") == 0)))
+    target_flags |= MASK_LOONGSON_EXT2;
+
+  /* Default to enable MSA on gs264e target.  */
+  if ((target_flags_explicit & MASK_MSA) == 0
+      && (strcmp (mips_arch_info->name, "gs264e") == 0))
+    target_flags |= MASK_MSA;
+
   /* .eh_frame addresses should be the same width as a C pointer.
      Most MIPS ABIs support only one pointer size, so the assembler
      will usually know exactly how big an .eh_frame address is.
@@ -21330,12 +21376,12 @@ void mips_function_profiler (FILE *file)
 
 /* Implement TARGET_SHIFT_TRUNCATION_MASK.  We want to keep the default
    behavior of TARGET_SHIFT_TRUNCATION_MASK for non-vector modes even
-   when TARGET_LOONGSON_VECTORS is true.  */
+   when TARGET_LOONGSON_MMI is true.  */
 
 static unsigned HOST_WIDE_INT
 mips_shift_truncation_mask (machine_mode mode)
 {
-  if (TARGET_LOONGSON_VECTORS && VECTOR_MODE_P (mode))
+  if (TARGET_LOONGSON_MMI && VECTOR_MODE_P (mode))
     return 0;
 
   return GET_MODE_BITSIZE (mode) - 1;
@@ -21436,7 +21482,7 @@ mips_expand_vpc_loongson_even_odd (struct expand_vec_perm_d *d)
   unsigned i, odd, nelt = d->nelt;
   rtx t0, t1, t2, t3;
 
-  if (!(TARGET_HARD_FLOAT && TARGET_LOONGSON_VECTORS))
+  if (!(TARGET_HARD_FLOAT && TARGET_LOONGSON_MMI))
     return false;
   /* Even-odd for V2SI/V2SFmode is matched by interleave directly.  */
   if (nelt < 4)
@@ -21493,7 +21539,7 @@ mips_expand_vpc_loongson_pshufh (struct expand_vec_perm_d *d)
   unsigned i, mask;
   rtx rmask;
 
-  if (!(TARGET_HARD_FLOAT && TARGET_LOONGSON_VECTORS))
+  if (!(TARGET_HARD_FLOAT && TARGET_LOONGSON_MMI))
     return false;
   if (d->vmode != V4HImode)
     return false;
@@ -21545,7 +21591,7 @@ mips_expand_vpc_loongson_bcast (struct expand_vec_perm_d *d)
   unsigned i, elt;
   rtx t0, t1;
 
-  if (!(TARGET_HARD_FLOAT && TARGET_LOONGSON_VECTORS))
+  if (!(TARGET_HARD_FLOAT && TARGET_LOONGSON_MMI))
     return false;
   /* Note that we've already matched V2SI via punpck and V4HI via pshufh.  */
   if (d->vmode != V8QImode)
@@ -22139,7 +22185,7 @@ mips_expand_vector_init (rtx target, rtx vals)
     }
 
   /* Loongson is the only cpu with vectors with more elements.  */
-  gcc_assert (TARGET_HARD_FLOAT && TARGET_LOONGSON_VECTORS);
+  gcc_assert (TARGET_HARD_FLOAT && TARGET_LOONGSON_MMI);
 
   /* If all values are identical, broadcast the value.  */
   if (all_same)

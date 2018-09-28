@@ -296,6 +296,9 @@ foreach option {
     mcount-ra-address
     odd-spreg
     msa
+    loongson-mmi
+    loongson-ext
+    loongson-ext2
 } {
     lappend mips_option_groups $option "-m(no-|)$option"
 }
@@ -881,6 +884,12 @@ proc mips-dg-init {} {
 	    "-mmsa"
 	    #else
 	    "-mno-msa"
+	    #endif
+
+	    #ifdef __mips_loongson_mmi
+	    "-mloongson-mmi"
+	    #else
+	    "-mno-loongson-mmi"
 	    #endif
 
 	    0

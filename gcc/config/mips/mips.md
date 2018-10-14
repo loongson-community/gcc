@@ -1183,6 +1183,7 @@
 (include "7000.md")
 (include "9000.md")
 (include "10000.md")
+(include "loongson-ext.md")
 (include "loongson2ef.md")
 (include "gs464.md")
 (include "gs464e.md")
